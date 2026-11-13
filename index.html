@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>仙境數位紀念品</title>
+    <!-- 確保手機版滿版且不能亂縮放 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <style>
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            background-color: #1a1a1a; color: white;
+            font-family: sans-serif; overflow: hidden;
+        }
+        /* 密碼輸入區 */
+        #login-screen {
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            height: 100vh; text-align: center; padding: 20px;
+        }
+        input {
+            padding: 12px; font-size: 18px; margin-top: 15px;
+            border-radius: 8px; border: none; text-align: center; width: 80%;
+        }
+        button.magic-btn {
+            padding: 12px 24px; font-size: 18px; margin-top: 20px;
+            background-color: #d4af37; color: black; border: none;
+            border-radius: 8px; font-weight: bold; cursor: pointer;
+        }
+        /* 相機與相框區 */
+        #ar-screen {
+            display: none; position: relative; width: 100%; height: 100vh; background: #000;
+        }
+        /* 即時相機畫面 */
+        video {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            object-fit: cover; /* 確保畫面滿版 */
+        }
+        /* 疊加的相框 */
+        #frame-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            /* 這裡一樣先放測試圖，之後換成你的仙境相框 */
+            background-image: url('https://upload.wikimedia.org/wikipedia/commons/4/41/Photo_frame_transparent_background.png');
+            background-size: cover; background-position: center; z-index: 10;
+        }
+        /* 拍照按鈕 */
+        #capture-btn {
+            position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
+            width: 70px; height: 70px; background-color: rgba(255,255,255,0.8);
+            border: 5px solid #d4af37; border-radius: 50%; z-index: 20; cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 密碼畫面 -->
+    <div id="login-screen">
+        <h2>✨ 尋找仙境的蹤跡 ✨</h2>
+        <p>請輸入通關密語來解鎖 AR 濾鏡</p>
+        <input type="text" id="password" placeholder="輸入密碼..." autocomplete="off">
+        <button class="magic-btn" onclick="checkPassword()">開啟濾鏡</button>
+    </div>
+
+    <!-- AR 濾鏡畫面 -->
+    <div id="ar-screen">
+        <!-- playsinline 是 iPhone 必須加的，不然影片會跳出全螢幕播放 -->
+        <video id="video" autoplay playsinline></video>
+        <div id="frame-overlay"></div>
+        <button id="capture-btn" onclick="takePhoto()"></button>
+    </div>
+
+    <!-- 隱藏畫布 (用來截圖合成) -->
+    <canvas id="canvas" style="display: none;"></canvas>
+
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const frameUrl = 'https://upload.wikimedia.org/wikipedia/commons/4/41/Photo_frame_transparent_background.png';
+
+        function checkPassword() {
+            const pwd = document.getElementById('password').value;
+            if (pwd.toUpperCase() === 'HPFL2026') {
+                document.getElementById('login-screen').style.display = 'none';
+                document.getElementById('ar-screen').style.display = 'block';
+                startCamera();
+            } else {
+                alert('密碼錯誤！請確認通關密語喔！');
+            }
+        }
+
+        function startCamera() {
+            // 呼叫手機後鏡頭
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+            .then(stream => {
+                video.srcObject = stream;
+            })
+            .catch(err => {
+                alert('無法開啟相機，請確認瀏覽器有開啟相機權限！');
+            });
+        }
+
+        function takePhoto() {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            
+            // 1. 畫上相機底圖
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            // 2. 疊加相框圖
+            const frameImg = new Image();
+            frameImg.crossOrigin = "anonymous";
+            frameImg.src = frameUrl;
+            
+            frameImg.onload = () => {
+                ctx.drawImage(frameImg, 0, 0, canvas.width, canvas.height);
+                
+                // 3. 下載照片
+                const imageURL = canvas.toDataURL('image/png');
+                const link = document.createElement('a');
+                link.download = '仙境AR紀念照.png';
+                link.href = imageURL;
+                link.click();
+            };
+        }
+    </script>
+</body>
+</html>
